@@ -15,30 +15,23 @@ const providerMetadata = {
 }
 
 // Define initial system messages once
-const getInitialPrompt = (): LanguageModelV1Prompt => [
-  {
-    role: "system",
-    content: SYSTEM_PROMPT,
-    providerMetadata: {
-      anthropic: {
-        cacheControl: {
-          type: "ephemeral",
+const getInitialPrompt = (): LanguageModelV1Prompt => {
+  const currentDate = new Date().toDateString()
+
+  return [
+    {
+      role: "system",
+      content: `${SYSTEM_PROMPT}\n\nThe current date is ${currentDate}`,
+      providerMetadata: {
+        anthropic: {
+          cacheControl: {
+            type: "ephemeral",
+          },
         },
       },
     },
-  },
-  {
-    role: "system",
-    content: `The current date is ${new Date().toDateString()}`,
-    providerMetadata: {
-      anthropic: {
-        cacheControl: {
-          type: "ephemeral",
-        },
-      },
-    },
-  },
-]
+  ]
+}
 
 export function App() {
   let root: HTMLDivElement | undefined
@@ -268,7 +261,7 @@ export function App() {
               )}
 
               {/* Show system messages, but not the first ones (initial prompts) */}
-              {item.role === "system" && store.prompt.indexOf(item) > 1 && (
+              {item.role === "system" && store.prompt.indexOf(item) > 0 && (
                 <div data-slot="message" data-system={true}>
                   {item.content}
                 </div>
@@ -292,7 +285,7 @@ export function App() {
         <div data-slot="spacer"></div>
       </div>
       <div data-component="footer">
-        {store.prompt.length > 2 && !store.isProcessing && (
+        {store.prompt.length > 1 && !store.isProcessing && (
           <div data-slot="clear">
             <button data-component="clear-button" onClick={clearConversation}>
               Clear

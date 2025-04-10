@@ -5,7 +5,7 @@ import "./reset.css"
 import "./index.css"
 import { App } from "./app"
 import { createSignal, onMount, Show } from "solid-js"
-import { client, password, setPassword } from "./client"
+import { client } from "./client"
 
 const root = document.getElementById("root")
 
@@ -16,53 +16,34 @@ if (import.meta.env.DEV && !(root instanceof HTMLElement)) {
 }
 
 render(() => {
-  const [ready, setReady] = createSignal(false)
-  onMount(async () => {
-    // Try to authenticate without password first to check if auth is disabled
-    try {
-      const noAuthResult = await fetch(
-        `${import.meta.env.VITE_OPENCONTROL_ENDPOINT || ""}/auth`,
-        {
-          method: "GET",
-        },
-      )
-
-      // If successful without auth, server has auth disabled
-      if (noAuthResult.ok) {
-        setReady(true)
-        return
-      }
-    } catch (e) {
-      // Continue with password auth if this fails
-    }
-
-    // Regular password authentication flow
-    setPassword(localStorage.getItem("opencontrol:password"))
-    while (true) {
-      if (!password()) {
-        const result = prompt("Enter password")
-        if (!result) return
-        localStorage.setItem("opencontrol:password", result)
-        setPassword(result)
-      }
-      const result = await client.auth.$get({
-        json: {
-          jsonrpc: "2.0",
-          method: "initialize",
-          id: "1",
-        },
-      })
-
-      if (!result.ok) {
-        localStorage.removeItem("opencontrol:password")
-        setPassword(undefined)
-        alert("bad password")
-        continue
-      }
-      setReady(true)
-      break
-    }
-  })
+  const [ready, setReady] = createSignal(true)
+  
+  // onMount(async () => {
+  //   // Check if we're already authenticated with cookies
+  //   try {
+  //     // Make a simple API call to verify authentication
+  //     const authCheckResult = await fetch(
+  //       `${import.meta.env.VITE_OPENCONTROL_ENDPOINT || ""}/api/check-auth`,
+  //       {
+  //         method: "GET",
+  //         credentials: "include", // Important: include cookies in the request
+  //       }
+  //     )
+  //     
+  //     if (authCheckResult.ok) {
+  //       // We have valid cookies, proceed with the app
+  //       setReady(true)
+  //     } else {
+  //       // If not authenticated, redirect to OAuth login
+  //       window.location.href = `${import.meta.env.VITE_OPENCONTROL_ENDPOINT || ""}/api/oauth/login`
+  //     }
+  //   } catch (e) {
+  //     console.error("Authentication check failed:", e)
+  //     // If there's an error checking auth, redirect to OAuth login
+  //     window.location.href = `${import.meta.env.VITE_OPENCONTROL_ENDPOINT || ""}/api/oauth/login`
+  //   }
+  // })
+  
   return (
     <Show when={ready()}>
       <App />

@@ -21,6 +21,11 @@ export const client = hc<App>(import.meta.env.VITE_OPENCONTROL_ENDPOINT || "", {
     }
 
     // Otherwise, just pass through the request without auth
-    return fetch(request, init)
+    const requestInit = {
+      ...init,
+      credentials: "include" as RequestCredentials,
+    }
+    return fetch(input, requestInit)
   },
 })
+
