@@ -19,7 +19,6 @@ class ProxyTransport {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            authorization: `Bearer ${key}`,
           },
           body: JSON.stringify(message),
         }).then(async (response) => this.send(await response.json()))
