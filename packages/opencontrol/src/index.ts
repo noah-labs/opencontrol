@@ -25,16 +25,6 @@ export function create(input: OpenControlOptions) {
   const mcp = createMcp({ tools: input.tools })
   const app = input.app ?? new Hono()
 
-  // Create the base app with CORS
-  const baseApp = app.use(
-    cors({
-      origin: "*",
-      allowHeaders: ["*"],
-      allowMethods: ["GET", "POST"],
-      credentials: true,
-    })
-  )
-
   const generateHandler = async (c: Context) => {
     if (!input.model)
       throw new HTTPException(400, { message: "No model configured" })
@@ -60,22 +50,29 @@ export function create(input: OpenControlOptions) {
     return c.json(result)
   }
 
+  app.use(
+    cors({
+      origin: "*",
+      allowHeaders: ["*"],
+      allowMethods: ["GET", "POST"],
+      credentials: true,
+    })
+  )
 
-  // Add the HTML route to the base app
-  baseApp.get("/", async (c) => {
+  app.get("/", async (c) => {
     return c.html(HTML)
   })
 
-  baseApp.post(
+  app.post(
     "/generate",
     // @ts-ignore 
     zValidator("json", z.custom<LanguageModelV1CallOptions>()),
     generateHandler
   )
 
-  baseApp.post("/mcp", mcpHandler)
+  app.post("/mcp", mcpHandler)
 
   return {
-    fetch: baseApp.fetch.bind(baseApp),
+    fetch: app.fetch.bind(app),
   }
 }
