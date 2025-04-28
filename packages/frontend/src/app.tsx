@@ -2,7 +2,6 @@ import { LanguageModelV1Prompt } from "ai"
 import { createEffect, For, onCleanup } from "solid-js"
 import { createStore } from "solid-js/store"
 import SYSTEM_PROMPT from "./system.txt?raw"
-import { hc } from "hono/client"
 import { type App } from "opencontrol"
 import { client } from "./client"
 
