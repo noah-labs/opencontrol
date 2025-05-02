@@ -4,4 +4,23 @@ set -e
 
 (cd packages/frontend && bun run build)
 (cd packages/opencontrol && bun run build)
-bun changeset publish
+
+tar -cvf opencontrol.tar.gz -C packages opencontrol
+
+VERSION=$(node -p "require('./packages/opencontrol/package.json').version")
+
+# Extract changelog notes for the current version
+CHANGELOG_FILE="packages/opencontrol/CHANGELOG.md"
+NOTES=$(awk -v version="## $VERSION" '
+  BEGIN { print_notes = 0 }
+  $0 ~ version { print_notes = 1; next }
+  print_notes && /^## / { exit }
+  print_notes && !/^\s*$/ { print }
+' "$CHANGELOG_FILE" | sed 's/^/    /')
+
+# If no notes found, use a fallback message
+if [ -z "$NOTES" ]; then
+  NOTES="Automated patch bump for push to master"
+fi
+
+gh release create "v$VERSION" opencontrol.tar.gz --title "v$VERSION" --notes "$NOTES"
