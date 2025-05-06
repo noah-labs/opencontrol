@@ -17,6 +17,7 @@ export interface OpenControlOptions {
   tools: Tool[]
   model?: LanguageModelV1
   app?: Hono
+  origin: string
 }
 
 export type App = ReturnType<typeof create>
@@ -24,6 +25,7 @@ export type App = ReturnType<typeof create>
 export function create(input: OpenControlOptions) {
   const mcp = createMcp({ tools: input.tools })
   const app = input.app ?? new Hono()
+  const { origin } = input
 
   const generateHandler = async (c: Context) => {
     if (!input.model)
@@ -52,7 +54,7 @@ export function create(input: OpenControlOptions) {
 
   app.use(
     cors({
-      origin: "*",
+      origin,
       allowHeaders: ["*"],
       allowMethods: ["GET", "POST"],
       credentials: true,
