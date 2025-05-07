@@ -52,29 +52,21 @@ export function create(input: OpenControlOptions) {
     return c.json(result)
   }
 
-  app.use(
+  return app.use(
     cors({
       origin,
       allowHeaders: ["*"],
       allowMethods: ["GET", "POST"],
       credentials: true,
+    }))
+    .get("/", async (c) => {
+      return c.html(HTML)
     })
-  )
-
-  app.get("/", async (c) => {
-    return c.html(HTML)
-  })
-
-  app.post(
-    "/generate",
-    // @ts-ignore 
-    zValidator("json", z.custom<LanguageModelV1CallOptions>()),
-    generateHandler
-  )
-
-  app.post("/mcp", mcpHandler)
-
-  return {
-    fetch: app.fetch.bind(app),
-  }
+    .post(
+      "/generate",
+      // @ts-ignore 
+      zValidator("json", z.custom<LanguageModelV1CallOptions>()),
+      generateHandler
+    )
+    .post("/mcp", mcpHandler)
 }
