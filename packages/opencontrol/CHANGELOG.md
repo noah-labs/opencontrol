@@ -1,5 +1,11 @@
 # opencontrol
 
+## 0.1.2
+
+### Patch Changes
+
+- c3e535f: oauth support and release scripts
+
 ## 0.1.1
 
 ### Patch Changes
