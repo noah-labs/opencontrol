@@ -6,7 +6,7 @@ export const client = hc<App>("", {
     const [input, init] = args
     return fetch(input, {
       ...init,
-      credentials: "include" as RequestCredentials,
+      credentials: "same-origin" as RequestCredentials,
     })
   },
 })
