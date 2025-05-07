@@ -1,5 +1,18 @@
 # opencontrol
 
+## 0.1.2
+
+### Patch Changes
+
+- c3e535f: oauth support and release scripts
+
+## 0.1.1
+
+### Patch Changes
+
+- fefc27c: Adds OPENCONTROL_DISABLE_AUTH
+- ffb899f: add license to package.json
+
 ## 0.1.0
 
 ### Minor Changes
