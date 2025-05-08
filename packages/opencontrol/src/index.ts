@@ -4,11 +4,7 @@ import { createMcp } from "./mcp.js"
 import { cors } from "hono/cors"
 import HTML from "opencontrol-frontend/dist/index.html" with { type: "text" }
 import { zValidator } from "@hono/zod-validator"
-import {
-  APICallError,
-  LanguageModelV1,
-  LanguageModelV1CallOptions,
-} from "ai"
+import { APICallError, LanguageModelV1, LanguageModelV1CallOptions } from "ai"
 import { z } from "zod"
 import { HTTPException } from "hono/http-exception"
 import type { Context } from "hono"
@@ -52,21 +48,23 @@ export function create(input: OpenControlOptions) {
     return c.json(result)
   }
 
-  return app.use(
-    cors({
-      origin,
-      allowHeaders: ["*"],
-      allowMethods: ["GET", "POST"],
-      credentials: true,
-    }))
+  return app
+    .use(
+      cors({
+        origin,
+        allowHeaders: ["*"],
+        allowMethods: ["GET", "POST"],
+        credentials: true,
+      }),
+    )
     .get("/", async (c) => {
       return c.html(HTML)
     })
     .post(
       "/generate",
-      // @ts-ignore 
+      // @ts-ignore
       zValidator("json", z.custom<LanguageModelV1CallOptions>()),
-      generateHandler
+      generateHandler,
     )
     .post("/mcp", mcpHandler)
 }
