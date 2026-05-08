@@ -1,11 +1,11 @@
-import { LanguageModelV1Prompt } from "ai"
+import type { LanguageModelV3Prompt } from "@ai-sdk/provider"
 import { createEffect, For, onCleanup } from "solid-js"
 import { createStore } from "solid-js/store"
 import SYSTEM_PROMPT from "./system.txt?raw"
 import { type App } from "opencontrol"
 import { client } from "./client"
 
-const providerMetadata = {
+const providerOptions = {
   anthropic: {
     cacheControl: {
       type: "ephemeral",
@@ -14,20 +14,14 @@ const providerMetadata = {
 }
 
 // Define initial system messages once
-const getInitialPrompt = (): LanguageModelV1Prompt => {
+const getInitialPrompt = (): LanguageModelV3Prompt => {
   const currentDate = new Date().toDateString()
 
   return [
     {
       role: "system",
       content: `${SYSTEM_PROMPT}\n\nThe current date is ${currentDate}`,
-      providerMetadata: {
-        anthropic: {
-          cacheControl: {
-            type: "ephemeral",
-          },
-        },
-      },
+      providerOptions,
     },
   ]
 }
@@ -50,7 +44,7 @@ export function App() {
     )
 
   const [store, setStore] = createStore<{
-    prompt: LanguageModelV1Prompt
+    prompt: LanguageModelV3Prompt
     isProcessing: boolean
     rate: boolean
   }>({
@@ -91,9 +85,9 @@ export function App() {
         {
           type: "text",
           text: message,
-          providerMetadata: store.prompt.length === 1 ? providerMetadata : {},
         },
       ],
+      providerOptions: store.prompt.length === 1 ? providerOptions : undefined,
     })
 
     while (true) {
@@ -105,18 +99,12 @@ export function App() {
       const response = await client.generate.$post({
         json: {
           prompt: store.prompt,
-          mode: {
-            type: "regular",
-            tools: (await toolDefs).map((tool: any) => ({
-              type: "function",
-              name: tool.name,
-              description: tool.description,
-              parameters: {
-                ...tool.inputSchema,
-              },
-            })),
-          },
-          inputFormat: "messages",
+          tools: (await toolDefs).map((tool: any) => ({
+            type: "function",
+            name: tool.name,
+            description: tool.description,
+            inputSchema: { ...tool.inputSchema },
+          })),
           temperature: 1,
         },
       })
@@ -140,13 +128,21 @@ export function App() {
 
       const result = await response.json()
 
-      if (result.text) {
+      // V3 result shape: content[] array of typed parts
+      const contentParts: Array<any> = Array.isArray(result.content)
+        ? result.content
+        : []
+
+      // Render text parts
+      const textParts = contentParts.filter((p) => p.type === "text")
+      if (textParts.length > 0) {
+        const combinedText = textParts.map((p) => p.text).join("")
         setStore("prompt", store.prompt.length, {
           role: "assistant",
           content: [
             {
               type: "text",
-              text: result.text,
+              text: combinedText,
             },
           ],
         })
@@ -154,22 +150,31 @@ export function App() {
 
       setStore("rate", false)
 
-      if (result.finishReason === "stop") {
+      // V3 finishReason is { unified, raw }
+      const finishReason = result.finishReason?.unified ?? result.finishReason
+
+      if (finishReason === "stop") {
         setStore("isProcessing", false)
         break
       }
 
-      if (result.finishReason === "tool-calls") {
-        for (const item of result.toolCalls!) {
-          console.log("calling tool", item.toolName, item.args)
+      if (finishReason === "tool-calls") {
+        const toolCalls = contentParts.filter((p) => p.type === "tool-call")
+        for (const item of toolCalls) {
+          // V3 tool-call has `input` as JSON string
+          const args =
+            typeof item.input === "string"
+              ? JSON.parse(item.input)
+              : item.input
+          console.log("calling tool", item.toolName, args)
           setStore("prompt", store.prompt.length, {
             role: "assistant",
             content: [
               {
                 type: "tool-call",
-                toolName: item.toolName,
-                args: JSON.parse(item.args),
                 toolCallId: item.toolCallId,
+                toolName: item.toolName,
+                input: args,
               },
             ],
           })
@@ -182,7 +187,7 @@ export function App() {
                 method: "tools/call",
                 params: {
                   name: item.toolName,
-                  arguments: JSON.parse(item.args),
+                  arguments: args,
                 },
               },
             })
@@ -193,9 +198,12 @@ export function App() {
               content: [
                 {
                   type: "tool-result",
-                  toolName: item.toolName,
                   toolCallId: item.toolCallId,
-                  result: response.result.content,
+                  toolName: item.toolName,
+                  output: {
+                    type: "content",
+                    value: response.result.content,
+                  },
                 },
               ],
             })
@@ -235,7 +243,7 @@ export function App() {
                       <div data-slot="tool-header" onClick={toggleArgs}>
                         <span data-slot="tool-icon">🔧</span>
                         <span data-slot="tool-name">
-                          {item.content[0].toolName}
+                          {(item.content[0] as any).toolName}
                         </span>
                         <span data-slot="tool-expand">
                           {showArgs.visible ? "−" : "+"}
@@ -244,7 +252,11 @@ export function App() {
                       {showArgs.visible && (
                         <div data-slot="tool-args">
                           <pre>
-                            {JSON.stringify(item.content[0].args, null, 2)}
+                            {JSON.stringify(
+                              (item.content[0] as any).input,
+                              null,
+                              2,
+                            )}
                           </pre>
                         </div>
                       )}

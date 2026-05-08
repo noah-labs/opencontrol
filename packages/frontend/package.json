@@ -18,7 +18,8 @@
     "vite-plugin-solid": "2.11.6"
   },
   "dependencies": {
-    "ai": "4.2.11",
+    "@ai-sdk/provider": "3.0.8",
+    "ai": "6.0.175",
     "hono": "4.7.5",
     "opencontrol": "workspace:*",
     "solid-js": "1.9.5"
