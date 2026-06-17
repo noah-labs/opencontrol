@@ -23,7 +23,7 @@
   "dependencies": {
     "@ai-sdk/provider": "3.0.8",
     "@hono/zod-validator": "0.4.3",
-    "@modelcontextprotocol/sdk": "1.9.0",
+    "@modelcontextprotocol/sdk": "1.25.2",
     "@tsconfig/bun": "1.0.7",
     "ai": "6.0.175",
     "hono": "4.7.5",
